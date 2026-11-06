@@ -1,0 +1,98 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function validProductData() {
+      return request.resource.data.id is string
+        && request.resource.data.sellerId is string
+        && request.resource.data.sellerName is string
+        && request.resource.data.name is string
+        && request.resource.data.category is string
+        && request.resource.data.type is string
+        && request.resource.data.description is string
+        && request.resource.data.price is number
+        && request.resource.data.stock is number
+        && request.resource.data.isPlant is bool
+        && request.resource.data.isFeatured is bool
+        && request.resource.data.isActive is bool
+        && request.resource.data.listingStatus in ['Active', 'Out of Stock', 'Draft']
+        && request.resource.data.sellerId == request.auth.uid;
+    }
+
+    function validWishlistItem(productId) {
+      return request.resource.data.productId is string
+        && request.resource.data.productId == productId;
+    }
+
+    function validSellerProfile() {
+      return request.resource.data.userId is string
+        && request.resource.data.name is string
+        && request.resource.data.email is string
+        && request.resource.data.phone is string
+        && request.resource.data.location is string
+        && request.resource.data.profileImage is string
+        && request.resource.data.userId == request.auth.uid;
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow create: if signedIn() && validProductData();
+      allow update: if signedIn()
+        && resource.data.sellerId == request.auth.uid
+        && request.resource.data.sellerId == resource.data.sellerId
+        && validProductData();
+      allow delete: if signedIn() && resource.data.sellerId == request.auth.uid;
+    }
+
+    match /wishlists/{userId} {
+      allow read, write: if false;
+
+      match /items/{productId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validWishlistItem(productId);
+        allow delete: if isOwner(userId);
+      }
+    }
+
+    match /seller_profiles/{userId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId) && validSellerProfile();
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+
+      match /plant_identifications/{identificationId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /disease_identifications/{identificationId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    match /orders/{orderId} {
+      allow read: if signedIn()
+        && (resource.data.buyerId == request.auth.uid
+          || resource.data.sellerId == request.auth.uid);
+      allow create, update, delete: if false;
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if signedIn()
+        && resource.data.userId == request.auth.uid;
+    }
+  }
+}

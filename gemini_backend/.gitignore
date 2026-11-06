@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+node_modules/
+*.local
+*.secret
+*.secrets
+config.local.*
+secrets/
+credentials/

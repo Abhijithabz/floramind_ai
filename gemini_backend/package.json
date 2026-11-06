@@ -1,0 +1,13 @@
+{
+  "name": "floramind-gemini-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Standalone secure Gemini and PlantNet backend for FloraMind plant identification",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

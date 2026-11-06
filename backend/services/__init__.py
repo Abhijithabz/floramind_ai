@@ -1,0 +1,2 @@
+"""FloraMind AI service package."""
+
